@@ -53,61 +53,61 @@ param privateDnsZoneName string
 @description('Array of object ids that will have admin role of the cluster')
 param clusterAdmins array = []
 
-resource privateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' existing = {
-  name: privateDnsZoneName
-}
+// resource privateDnsZone 'Microsoft.Network/privateDnsZones@2020-06-01' existing = {
+//   name: 'graphrag.io'
+// }
 
 resource aks 'Microsoft.ContainerService/managedClusters@2024-09-02-preview' = {
   name: clusterName
-  location: location
+  location: 'eastus2'
   identity: {
     type: 'SystemAssigned'
   }
   properties: {
     enableRBAC: true
     disableLocalAccounts: true
-    dnsPrefix: !empty(dnsPrefix) ? dnsPrefix : toLower(clusterName)
+    // dnsPrefix: !empty(dnsPrefix) ? dnsPrefix : toLower(clusterName)
     aadProfile: {
       managed: true
       enableAzureRBAC: true
       adminGroupObjectIDs: clusterAdmins
     }
-    addonProfiles: {
-      omsagent: {
-        enabled: true
-        config: {
-          logAnalyticsWorkspaceResourceID: logAnalyticsWorkspaceId
-        }
-      }
-    }
-    agentPoolProfiles: [
-      {
-        name: 'agentpool'
-        enableAutoScaling: true
-        upgradeSettings: {
-          maxSurge: '50%'
-        }
-        minCount: 1
-        maxCount: 10
-        osDiskSizeGB: systemOsDiskSizeGB
-        count: systemNodeCount
-        vmSize: systemVMSize
-        osType: 'Linux'
-        mode: 'System'
-        enableEncryptionAtHost: enableEncryptionAtHost
-        vnetSubnetID: subnetId
-        type: 'VirtualMachineScaleSets'
-      }
-    ]
-    autoScalerProfile: {
-      expander: 'least-waste'
-    }
+    // addonProfiles: {
+    //   omsagent: {
+    //     enabled: true
+    //     config: {
+    //       logAnalyticsWorkspaceResourceID: logAnalyticsWorkspaceId
+    //     }
+    //   }
+    // }
+    // agentPoolProfiles: [
+    //   {
+    //     name: 'agentpool'
+    //     enableAutoScaling: true
+    //     upgradeSettings: {
+    //       maxSurge: '50%'
+    //     }
+    //     minCount: 1
+    //     maxCount: 10
+    //     osDiskSizeGB: systemOsDiskSizeGB
+    //     count: systemNodeCount
+    //     vmSize: systemVMSize
+    //     osType: 'Linux'
+    //     mode: 'System'
+    //     enableEncryptionAtHost: enableEncryptionAtHost
+    //     // vnetSubnetID: subnetId
+    //     type: 'VirtualMachineScaleSets'
+    //   }
+    // ]
+    // autoScalerProfile: {
+    //   expander: 'least-waste'
+    // }
     ingressProfile: {
       webAppRouting: {
         enabled: true
-        dnsZoneResourceIds: [
-          privateDnsZone.id
-        ]
+        // dnsZoneResourceIds: [
+        //   '/subscriptions/3348a6aa-3579-4bd1-bcbf-d50cc5aaad31/resourceGroups/rg-graphrag-poc/providers/Microsoft.Network/privateDnsZones/graphrag.io'
+        // ]
       }
     }
     networkProfile: {
@@ -140,8 +140,8 @@ resource aks 'Microsoft.ContainerService/managedClusters@2024-09-02-preview' = {
       vmSize: graphragVMSize
       osType: 'Linux'
       mode: 'User'
-      enableEncryptionAtHost: enableEncryptionAtHost
-      vnetSubnetID: subnetId
+      // enableEncryptionAtHost: enableEncryptionAtHost
+      // vnetSubnetID: subnetId
       nodeLabels: {
         workload: 'graphrag'
       }
@@ -166,8 +166,8 @@ resource aks 'Microsoft.ContainerService/managedClusters@2024-09-02-preview' = {
       vmSize: graphragIndexingVMSize
       osType: 'Linux'
       mode: 'User'
-      enableEncryptionAtHost: enableEncryptionAtHost
-      vnetSubnetID: subnetId
+      // enableEncryptionAtHost: enableEncryptionAtHost
+      // vnetSubnetID: subnetId
       nodeLabels: {
         workload: 'graphrag-indexing'
       }
@@ -179,47 +179,47 @@ resource aks 'Microsoft.ContainerService/managedClusters@2024-09-02-preview' = {
   }
 }
 
-resource aksManagedAutoUpgradeSchedule 'Microsoft.ContainerService/managedClusters/maintenanceConfigurations@2024-09-02-preview' = {
-  parent: aks
-  name: 'aksManagedAutoUpgradeSchedule'
-  properties: {
-    maintenanceWindow: {
-      schedule: {
-        weekly: {
-          intervalWeeks: 1
-          dayOfWeek: 'Monday'
-        }
-      }
-      durationHours: 4
-      startDate: '2024-06-11'
-      startTime: '12:00'
-    }
-  }
-}
+// resource aksManagedAutoUpgradeSchedule 'Microsoft.ContainerService/managedClusters/maintenanceConfigurations@2024-09-02-preview' = {
+//   parent: aks
+//   name: 'aksManagedAutoUpgradeSchedule'
+//   properties: {
+//     maintenanceWindow: {
+//       schedule: {
+//         weekly: {
+//           intervalWeeks: 1
+//           dayOfWeek: 'Monday'
+//         }
+//       }
+//       durationHours: 4
+//       startDate: '2024-06-11'
+//       startTime: '12:00'
+//     }
+//   }
+// }
 
-resource aksManagedNodeOSUpgradeSchedule 'Microsoft.ContainerService/managedClusters/maintenanceConfigurations@2024-09-02-preview' = {
-  parent: aks
-  name: 'aksManagedNodeOSUpgradeSchedule'
-  properties: {
-    maintenanceWindow: {
-      schedule: {
-        weekly: {
-          intervalWeeks: 1
-          dayOfWeek: 'Saturday'
-        }
-      }
-      durationHours: 4
-      startDate: '2024-06-11'
-      startTime: '12:00'
-    }
-  }
-}
+// resource aksManagedNodeOSUpgradeSchedule 'Microsoft.ContainerService/managedClusters/maintenanceConfigurations@2024-09-02-preview' = {
+//   parent: aks
+//   name: 'aksManagedNodeOSUpgradeSchedule'
+//   properties: {
+//     maintenanceWindow: {
+//       schedule: {
+//         weekly: {
+//           intervalWeeks: 1
+//           dayOfWeek: 'Saturday'
+//         }
+//       }
+//       durationHours: 4
+//       startDate: '2024-06-11'
+//       startTime: '12:00'
+//     }
+//   }
+// }
 
 output name string = aks.name
 output id string = aks.id
 output managedResourceGroup string = aks.properties.nodeResourceGroup
 output controlPlaneFqdn string = aks.properties.fqdn
 output kubeletPrincipalId string = aks.properties.identityProfile.kubeletidentity.objectId
-output ingressWebAppIdentity string = aks.properties.ingressProfile.webAppRouting.identity.objectId
+// output ingressWebAppIdentity string = aks.properties.ingressProfile.webAppRouting.identity.objectId
 output systemIdentity string = aks.identity.principalId
 output issuer string = aks.properties.oidcIssuerProfile.issuerURL
