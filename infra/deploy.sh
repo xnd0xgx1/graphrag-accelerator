@@ -28,6 +28,7 @@ requiredParams=(
     GRAPHRAG_EMBEDDING_MODEL
     GRAPHRAG_EMBEDDING_DEPLOYMENT_NAME
     RESOURCE_GROUP
+    RESOURCE_GROUP_AKS
 )
 
 errorBanner () {
@@ -321,10 +322,10 @@ deployAzureResources () {
     echo "Deployment name: $deployName"
     local AZURE_DEPLOY_RESULTS=$(az deployment group create --name "$deployName" \
         --no-prompt \
-        --resource-group $RESOURCE_GROUP \
+        --resource-group $RESOURCE_GROUP_AKS \
         --template-file ./main.bicep \
         --parameters "resourceBaseName=$RESOURCE_BASE_NAME" \
-        --parameters "resourceGroup=$RESOURCE_GROUP" \
+        --parameters "resourceGroup=$RESOURCE_GROUP_AKS" \
         --parameters "apimName=$APIM_NAME" \
         --parameters "apimTier=$APIM_TIER" \
         --parameters "apiPublisherName=$PUBLISHER_NAME" \
@@ -339,7 +340,7 @@ deployAzureResources () {
     AZURE_OUTPUTS=$(jq -r .properties.outputs <<< $AZURE_DEPLOY_RESULTS)
     exitIfCommandFailed $? "Error parsing outputs from Azure deployment..."
     exitIfValueEmpty "$AZURE_OUTPUTS" "Error parsing outputs from Azure deployment..."
-    assignAOAIRoleToManagedIdentity
+    # assignAOAIRoleToManagedIdentity
 }
 
 validateSKUs() {
@@ -442,17 +443,17 @@ installGraphRAGHelmChart () {
         reset_x=false
     fi
 
+        # --set "serviceAccount.name=$serviceAccountName" \
+        # --set "serviceAccount.annotations.azure\.workload\.identity/client-id=$workloadId" \
+        # --set "master.image.repository=$containerRegistryName/$graphragImageName" \
+        # --set "master.image.tag=$graphragImageVersion" \
+        # --set "ingress.host=$graphragHostname" \
     helm upgrade -i graphrag ./helm/graphrag -f ./helm/graphrag/values.yaml \
         --namespace $aksNamespace --create-namespace \
-        --set "serviceAccount.name=$serviceAccountName" \
-        --set "serviceAccount.annotations.azure\.workload\.identity/client-id=$workloadId" \
-        --set "master.image.repository=$containerRegistryName/$graphragImageName" \
-        --set "master.image.tag=$graphragImageVersion" \
-        --set "ingress.host=$graphragHostname" \
-        --set "graphragConfig.APPLICATIONINSIGHTS_CONNECTION_STRING=$appInsightsConnectionString" \
-        --set "graphragConfig.AI_SEARCH_URL=https://$aiSearchName.$AISEARCH_ENDPOINT_SUFFIX" \
-        --set "graphragConfig.AI_SEARCH_AUDIENCE=$AISEARCH_AUDIENCE" \
-        --set "graphragConfig.COSMOS_URI_ENDPOINT=$cosmosEndpoint" \
+        --set "graphragConfig.APPLICATIONINSIGHTS_CONNECTION_STRING=InstrumentationKey=e15cae3a-0dff-4027-aa79-0913bbf77a39;IngestionEndpoint=https://eastus2-3.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus2.livediagnostics.monitor.azure.com/;ApplicationId=7e85cf8d-622e-447f-9c3d-91f13ed1db7e" \
+        --set "graphragConfig.AI_SEARCH_URL=https://srch-qrg6duk4d73z2.search.windows.net" \
+        --set "graphragConfig.AI_SEARCH_AUDIENCE=https://search.azure.com" \
+        --set "graphragConfig.COSMOS_URI_ENDPOINT=https://cosmos-qrg6duk4d73z2.documents.azure.com:443/" \
         --set "graphragConfig.GRAPHRAG_API_BASE=$GRAPHRAG_API_BASE" \
         --set "graphragConfig.GRAPHRAG_API_VERSION=$GRAPHRAG_API_VERSION" \
         --set "graphragConfig.COGNITIVE_SERVICES_AUDIENCE=$COGNITIVE_SERVICES_AUDIENCE" \
@@ -513,17 +514,17 @@ waitForGraphragBackend () {
 
 deployDnsRecord () {
     waitForExternalIp
-    exitIfValueEmpty "$GRAPHRAG_SERVICE_IP" "Unable to get GraphRAG external IP."
-    local dnsZoneName=$(jq -r .azure_dns_zone_name.value <<< $AZURE_OUTPUTS)
-    exitIfValueEmpty "$dnsZoneName" "Error parsing DNS zone name from azure outputs, exiting..."
-    az deployment group create --only-show-errors --no-prompt \
-        --name graphrag-dns \
-        --resource-group $RESOURCE_GROUP \
-        --template-file core/vnet/private-dns-zone-a-record.bicep \
-        --parameters "name=graphrag" \
-        --parameters "dnsZoneName=$dnsZoneName" \
-        --parameters "ipv4Address=$GRAPHRAG_SERVICE_IP" > /dev/null
-    exitIfCommandFailed $? "Error creating GraphRAG DNS record, exiting..."
+    # exitIfValueEmpty "$GRAPHRAG_SERVICE_IP" "Unable to get GraphRAG external IP."
+    # local dnsZoneName=$(jq -r .azure_dns_zone_name.value <<< $AZURE_OUTPUTS)
+    # exitIfValueEmpty "$dnsZoneName" "Error parsing DNS zone name from azure outputs, exiting..."
+    # az deployment group create --only-show-errors --no-prompt \
+    #     --name graphrag-dns \
+    #     --resource-group $RESOURCE_GROUP \
+    #     --template-file core/vnet/private-dns-zone-a-record.bicep \
+    #     --parameters "name=graphrag" \
+    #     --parameters "dnsZoneName=$dnsZoneName" \
+    #     --parameters "ipv4Address=$GRAPHRAG_SERVICE_IP" > /dev/null
+    # exitIfCommandFailed $? "Error creating GraphRAG DNS record, exiting..."
 }
 
 deployGraphragAPI () {
@@ -550,7 +551,7 @@ deployGraphragAPI () {
         --parameters "apimname=$apimName" > /dev/null
     exitIfCommandFailed $? "Error registering graphrag API, exiting..."
     # cleanup
-    rm core/apim/graphrag-openapi.json
+    # rm core/apim/graphrag-openapi.json
 }
 
 grantDevAccessToAzureResources() {
@@ -676,13 +677,13 @@ checkRequiredTools
 populateParams $PARAMS_FILE
 
 # Check SKU availability and quotas
-validateSKUs $LOCATION $VALIDATE_SKUS_FLAG
+# validateSKUs $LOCATION $VALIDATE_SKUS_FLAG
 
 # Create resource group
-createResourceGroupIfNotExists $LOCATION $RESOURCE_GROUP
+# createResourceGroupIfNotExists $LOCATION $RESOURCE_GROUP
 
 # Deploy Azure resources
-checkForApimSoftDelete
+# checkForApimSoftDelete
 deployAzureResources
 
 # Deploy the graphrag backend docker image to ACR
@@ -695,10 +696,12 @@ installGraphRAGHelmChart
 
 # Import and setup GraphRAG API in APIM
 deployDnsRecord
-deployGraphragAPI
 
-if [ $GRANT_DEV_ACCESS -eq 1 ]; then
-    grantDevAccessToAzureResources
-fi
+
+# deployGraphragAPI
+
+# if [ $GRANT_DEV_ACCESS -eq 1 ]; then
+#     grantDevAccessToAzureResources
+# fi
 
 successBanner
