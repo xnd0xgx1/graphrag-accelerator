@@ -240,3 +240,16 @@ class GraphragAPI:
             with open(zip_file_name, "wb") as f:
                 for chunk in r.iter_content():
                     f.write(chunk)
+
+    def getgraphml(self, index_name: str) -> dict | None:
+        try:
+            response = requests.get(
+                f"{self.api_url}/graph/graphml/{index_name}",
+                headers=self.headers,
+            )
+            if response.status_code == 200:
+                return response.content
+            else:
+                return response
+        except Exception as e:
+            print(f"Error: {str(e)}")

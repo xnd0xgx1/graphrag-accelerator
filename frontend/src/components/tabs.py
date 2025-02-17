@@ -30,14 +30,6 @@ def get_main_tab(initialized: bool) -> None:
     ##  Welcome to GraphRAG!
     Diving into complex information and uncovering semantic relationships utilizing generative AI has never been easier.
     Here's how you can get started with just a few clicks:
-    - **PROMPT GENERATION:** (*Optional Step*)
-        1. Generate fine-tuned prompts for graphrag customized to your data and domain.
-        2. Select an existing Storage Container and click "Generate Prompts".
-    - **PROMPT CONFIGURATION:** (*Optional Step*)
-        1. Edit the generated prompts to best suit your needs.
-        2. Once you are finished editing, click the "Save Prompts" button.
-        3. Saving the prompts will store them for use in the follow-on Indexing step.
-        4. You can also download the edited prompts for future reference.
     - **INDEXING:**
         1. Select an existing data storage container or upload data, to Index
         2. Name your index and select "Build Index" to begin building a GraphRAG Index.
@@ -239,11 +231,22 @@ def get_query_tab(client: GraphragAPI) -> None:
         )
 
     disabled = True if not any(select_index_search) else False
-    col3, col4 = st.columns([0.8, 0.2])
+    col3, col4, col5 = st.columns([0.6, 0.2,0.2])
     with col3:
         search_bar = st.text_input("Query", key="search-query", disabled=disabled)
     with col4:
         search_button = st.button("QUERY", type="primary", disabled=disabled)
+    with col5:
+        if(not disabled): 
+            file_content = client.getgraphml(select_index_search[0])
+            if file_content:
+                st.download_button(
+                    label="Descargar Archivo",
+                    data=file_content,
+                    type="primary",
+                    file_name=f"{select_index_search[0]}.graphml",
+                    mime="application/xml"
+                    )
 
     # defining a query variable enables the use of either the search bar or the search button to trigger the query
     query = st.session_state["search-query"]

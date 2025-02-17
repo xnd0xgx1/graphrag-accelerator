@@ -18,12 +18,10 @@ st.session_state["initialized"] = True if initialized else False
 
 def graphrag_app(initialized: bool):
     st.title("Microsoft GraphRAG Copilot")
-    main_tab, prompt_gen_tab, prompt_edit_tab, index_tab, query_tab = st.tabs([
+    main_tab,  index_tab, query_tab = st.tabs([
         "**Intro**",
-        "**1. Prompt Generation**",
-        "**2. Prompt Configuration**",
-        "**3. Index**",
-        "**4. Query**",
+        "**Index**",
+        "**Query**",
     ])
     # display only the main tab if a connection to an existing APIM has not been initialized
     with main_tab:
@@ -40,10 +38,6 @@ def graphrag_app(initialized: bool):
             st.stop()
         indexPipe = IndexPipeline(client, COLUMN_WIDTHS)
         # display tabs
-        with prompt_gen_tab:
-            tabs.get_prompt_generation_tab(client, COLUMN_WIDTHS)
-        with prompt_edit_tab:
-            tabs.get_prompt_configuration_tab()
         with index_tab:
             tabs.get_index_tab(indexPipe)
         with query_tab:
